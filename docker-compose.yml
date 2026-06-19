@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  pyfarm-control:
+    build:
+      context: .
+      args:
+        PYFARM_REF: ${PYFARM_REF:-main}
+    image: pyfarm-control:${PYFARM_REF:-main}
+    container_name: pyfarm-control
+    ports:
+      - "8765:8765"
+    volumes:
+      - ./grow.yaml:/etc/pyfarm/grow.yaml:ro
+      - pyfarm-data:/var/lib/pyfarm
+      - /dev:/dev  # Required for GPIO access on the RPi host
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+    command: pyfarm grow start /etc/pyfarm/grow.yaml --api-port 8765 --db /var/lib/pyfarm/pyfarm.db
+    restart: unless-stopped
+    privileged: true  # Required for GPIO access
+    labels:
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  # OTA for the container path: Watchtower polls for a newer image and
+  # recreates the service automatically. For the build-from-git flow above,
+  # rebuild + push the image to your registry on release; Watchtower pulls it.
+  watchtower:
+    image: containrrr/watchtower
+    container_name: pyfarm-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --label-enable --cleanup --interval 3600
+    restart: unless-stopped
+
+volumes:
+  pyfarm-data:
+    driver: local
