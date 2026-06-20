@@ -1,0 +1,10 @@
+[Unit]
+Description=PyFarm over-the-air update check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Set PYFARM_REF here to track a tag/branch (defaults to main).
+Environment=PYFARM_REF=main
+ExecStart=/opt/pyfarm/pyfarm-deploy/scripts/ota-update.sh
